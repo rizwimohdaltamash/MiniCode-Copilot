@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isCodingPrompt } from '../utils/promptCheck';
 import { SparklesIcon } from '@heroicons/react/24/solid';
 
 const LANGUAGES = [
@@ -14,15 +15,22 @@ const LANGUAGES = [
     { value: 'ruby', label: 'Ruby' },
 ];
 
+
 export default function PromptInput({ onGenerate, isLoading }) {
     const [prompt, setPrompt] = useState('');
     const [language, setLanguage] = useState('javascript');
+    const [error, setError] = useState('');
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (prompt.trim() && !isLoading) {
-            onGenerate(prompt, language);
+        if (!prompt.trim() || isLoading) return;
+        if (!isCodingPrompt(prompt)) {
+            setError('Only ask coding questions or code descriptions!');
+            setTimeout(() => setError(''), 3000);
+            return;
         }
+        setError('');
+        onGenerate(prompt, language);
     };
 
     return (
@@ -30,6 +38,12 @@ export default function PromptInput({ onGenerate, isLoading }) {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-5">
                 Enter Your Prompt
             </h2>
+
+            {error && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {error}
+                </div>
+            )}
 
             <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
                 {/* Language Dropdown */}
