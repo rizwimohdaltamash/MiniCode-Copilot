@@ -1,19 +1,7 @@
-// Grok API Configuration - Using environment variables for security
-const GROK_API_KEY = import.meta.env.VITE_GROK_API_KEY;
-const GROK_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+// This module now uses local, language-specific mock snippets only.
+// API calls and keys were removed for safety and offline/demo usage.
 
-// OpenRouter Configuration (Fallback) - Using environment variables
-import { OpenRouter } from '@openrouter/sdk';
-
-const openRouter = new OpenRouter({
-    apiKey: import.meta.env.VITE_OPENROUTER_API_KEY,
-    defaultHeaders: {
-        'HTTP-Referer': 'http://localhost:5173',
-        'X-Title': 'Mini Code Copilot',
-    },
-});
-
-// Mock code snippets for fallback (Language Specific)
+// Mock code snippets for languages
 const MOCK_SNIPPETS = {
     javascript: `// JavaScript: Async Data Fetching
 async function fetchUserData(userId) {
@@ -193,106 +181,16 @@ user = User.new("Alice")`
 };
 
 /**
- * Call Grok API to generate code
- */
-async function callGrokAPI(prompt, language) {
-    if (!GROK_API_KEY) {
-        throw new Error('Grok API key is not configured. Please add VITE_GROK_API_KEY to your .env file.');
-    }
-
-    const response = await fetch(GROK_API_URL, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${GROK_API_KEY}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [
-                {
-                    role: 'system',
-                    content: `You are an expert coding assistant. Generate clean, production-ready ${language} code based on the user's request. Provide ONLY the code, no explanations. Comment the code helpfully.`
-                },
-                {
-                    role: 'user',
-                    content: prompt,
-                },
-            ],
-            temperature: 0.7,
-            max_tokens: 2048,
-        }),
-    });
-
-    if (!response.ok) {
-        throw new Error(`Grok API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
-}
-
-/**
- * Generate code using Grok API with fallback to OpenRouter and then mock data
+ * Generate code using local mock snippets only (no external API calls).
  * @param {string} prompt - The user's prompt
  * @param {string} language - The target programming language
- * @returns {Promise<{code: string, language: string, prompt: string}>}
+ * @returns {Promise<{code: string, language: string, prompt: string, isMock: boolean}>}
  */
 export async function generateCode(prompt, language = 'javascript') {
-    // 1. Try Grok API first
-    try {
-        console.log('Attempting to generate code via Grok API...');
-        let generatedCode = await callGrokAPI(prompt, language);
-
-        // Clean up markdown code blocks if present
-        generatedCode = generatedCode.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '');
-
-        return {
-            code: generatedCode,
-            language: language,
-            prompt: prompt
-        };
-    } catch (error) {
-        console.warn('Grok API failed, trying OpenRouter fallback:', error.message);
-    }
-
-    // 2. Try OpenRouter API as fallback
-    try {
-        console.log('Attempting to generate code via OpenRouter...');
-        const completion = await openRouter.chat.send({
-            model: 'openai/gpt-4o',
-            messages: [
-                {
-                    role: 'system',
-                    content: `You are an expert coding assistant. Generate clean, production-ready ${language} code based on the user's request. Provide ONLY the code, no explanations. Comment the code helpfully.`
-                },
-                {
-                    role: 'user',
-                    content: prompt,
-                },
-            ],
-        });
-
-        if (completion && completion.choices && completion.choices[0]) {
-            let generatedCode = completion.choices[0].message.content;
-
-            // Clean up markdown code blocks if present
-            generatedCode = generatedCode.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '');
-
-            return {
-                code: generatedCode,
-                language: language,
-                prompt: prompt
-            };
-        }
-    } catch (error) {
-        console.warn('OpenRouter API also failed, falling back to mock data:', error.message);
-    }
-
-    // 3. Fallback to Language-Specific Mock Data
-    console.log(`Using fallback mock data for language: ${language}`);
+    console.log(`Generating mock code for language: ${language}`);
 
     // Simulate network delay for realism
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 600));
 
     // Get snippet for the requested language, or default to JavaScript if not found
     const mockCode = MOCK_SNIPPETS[language.toLowerCase()] || MOCK_SNIPPETS['javascript'];
@@ -300,6 +198,7 @@ export async function generateCode(prompt, language = 'javascript') {
     return {
         code: mockCode,
         language: language,
-        prompt: prompt
+        prompt: prompt,
+        isMock: true
     };
 }
