@@ -1,4 +1,8 @@
 {
+    "buildCommand": "cd frontend/mycopilot && npm install && npm run build",
+    "outputDirectory": "frontend/mycopilot/dist",
+    "installCommand": "cd frontend/mycopilot && npm install",
+    "framework": "vite",
     "rewrites": [
         {
             "source": "/(.*)",
