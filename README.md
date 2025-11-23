@@ -36,7 +36,7 @@ A modern, AI-powered code generation assistant built with React. Generate code s
    VITE_OPENROUTER_API_KEY=sk_your_openrouter_key_here
    ```
    
-   > **Note**: The app will work in mock mode without API keys, but you'll get pre-written code snippets instead of AI-generated code.
+   > **Note**: If no API keys are configured, the app will automatically run in **Mock Mode**. It will generate high-quality, language-specific dummy code (e.g., requesting Python gives Python code) so you can test the UI and features without an API key.
 
 4. **Start the development server:**
    ```bash
