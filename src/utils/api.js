@@ -1,12 +1,12 @@
-// Grok API Configuration
-const GROK_API_KEY = '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';
+// Grok API Configuration - Using environment variables for security
+const GROK_API_KEY = import.meta.env.VITE_GROK_API_KEY;
 const GROK_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-// OpenRouter Configuration (Fallback)
+// OpenRouter Configuration (Fallback) - Using environment variables
 import { OpenRouter } from '@openrouter/sdk';
 
 const openRouter = new OpenRouter({
-    apiKey: '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',
+    apiKey: import.meta.env.VITE_OPENROUTER_API_KEY,
     defaultHeaders: {
         'HTTP-Referer': 'http://localhost:5173',
         'X-Title': 'Mini Code Copilot',
@@ -196,6 +196,10 @@ user = User.new("Alice")`
  * Call Grok API to generate code
  */
 async function callGrokAPI(prompt, language) {
+    if (!GROK_API_KEY) {
+        throw new Error('Grok API key is not configured. Please add VITE_GROK_API_KEY to your .env file.');
+    }
+
     const response = await fetch(GROK_API_URL, {
         method: 'POST',
         headers: {
