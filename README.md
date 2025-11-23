@@ -21,12 +21,29 @@ A modern, AI-powered code generation assistant built with React. Generate code s
    npm install
    ```
 
-3. **Start the development server:**
+3. **Configure API Keys:**
+   - Copy the `.env.example` file to `.env`:
+     ```bash
+     cp .env.example .env
+     ```
+   - Edit the `.env` file and add your API keys:
+     - **Grok API Key** (Primary): Get from [https://console.groq.com/keys](https://console.groq.com/keys)
+     - **OpenRouter API Key** (Optional Fallback): Get from [https://openrouter.ai/keys](https://openrouter.ai/keys)
+   
+   Your `.env` file should look like:
+   ```env
+   VITE_GROK_API_KEY=gsk_your_actual_grok_api_key_here
+   VITE_OPENROUTER_API_KEY=sk_your_openrouter_key_here
+   ```
+   
+   > **Note**: The app will work in mock mode without API keys, but you'll get pre-written code snippets instead of AI-generated code.
+
+4. **Start the development server:**
    ```bash
    npm run dev
    ```
 
-4. **Open your browser:**
+5. **Open your browser:**
    The app will be running at `http://localhost:5173`
 
 ### Deployment (Vercel)
