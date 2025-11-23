@@ -1,10 +1,14 @@
+// Grok API Configuration - Using environment variables for security
+const GROK_API_KEY = import.meta.env.VITE_GROK_API_KEY;
+const GROK_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
+// OpenRouter Configuration (Fallback) - Using environment variables
 import { OpenRouter } from '@openrouter/sdk';
 
-// Initialize OpenRouter with the provided API key
 const openRouter = new OpenRouter({
-    apiKey: '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',
+    apiKey: import.meta.env.VITE_OPENROUTER_API_KEY,
     defaultHeaders: {
-        'HTTP-Referer': 'http://localhost:5173', // Localhost for development
+        'HTTP-Referer': 'http://localhost:5173',
         'X-Title': 'Mini Code Copilot',
     },
 });
@@ -189,13 +193,69 @@ user = User.new("Alice")`
 };
 
 /**
- * Generate code using OpenRouter API with fallback to language-specific mocks
+ * Call Grok API to generate code
+ */
+async function callGrokAPI(prompt, language) {
+    if (!GROK_API_KEY) {
+        throw new Error('Grok API key is not configured. Please add VITE_GROK_API_KEY to your .env file.');
+    }
+
+    const response = await fetch(GROK_API_URL, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${GROK_API_KEY}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+                {
+                    role: 'system',
+                    content: `You are an expert coding assistant. Generate clean, production-ready ${language} code based on the user's request. Provide ONLY the code, no explanations. Comment the code helpfully.`
+                },
+                {
+                    role: 'user',
+                    content: prompt,
+                },
+            ],
+            temperature: 0.7,
+            max_tokens: 2048,
+        }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Grok API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+}
+
+/**
+ * Generate code using Grok API with fallback to OpenRouter and then mock data
  * @param {string} prompt - The user's prompt
  * @param {string} language - The target programming language
  * @returns {Promise<{code: string, language: string, prompt: string}>}
  */
 export async function generateCode(prompt, language = 'javascript') {
-    // 1. Try OpenRouter API
+    // 1. Try Grok API first
+    try {
+        console.log('Attempting to generate code via Grok API...');
+        let generatedCode = await callGrokAPI(prompt, language);
+
+        // Clean up markdown code blocks if present
+        generatedCode = generatedCode.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '');
+
+        return {
+            code: generatedCode,
+            language: language,
+            prompt: prompt
+        };
+    } catch (error) {
+        console.warn('Grok API failed, trying OpenRouter fallback:', error.message);
+    }
+
+    // 2. Try OpenRouter API as fallback
     try {
         console.log('Attempting to generate code via OpenRouter...');
         const completion = await openRouter.chat.send({
@@ -203,7 +263,7 @@ export async function generateCode(prompt, language = 'javascript') {
             messages: [
                 {
                     role: 'system',
-                    content: `You are an expert coding assistant. Generate clean, production-ready ${language} code based on the user's request. Provide ONLY the code, no explanations. Comment the code helpfuly.`
+                    content: `You are an expert coding assistant. Generate clean, production-ready ${language} code based on the user's request. Provide ONLY the code, no explanations. Comment the code helpfully.`
                 },
                 {
                     role: 'user',
@@ -225,11 +285,10 @@ export async function generateCode(prompt, language = 'javascript') {
             };
         }
     } catch (error) {
-        console.warn('OpenRouter API failed (likely 402 or network), falling back to mock data:', error.message);
-        // Fallback proceeds below
+        console.warn('OpenRouter API also failed, falling back to mock data:', error.message);
     }
 
-    // 2. Fallback to Language-Specific Mock Data
+    // 3. Fallback to Language-Specific Mock Data
     console.log(`Using fallback mock data for language: ${language}`);
 
     // Simulate network delay for realism
